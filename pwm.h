@@ -6,15 +6,6 @@
 #define MSGQUEUE_OBJECTS 16 
 #define FREQ_TONO1 4000
 #define FREQ_TONO2 6000
-//MENSAJE
-typedef struct {                                
-  int CT;
-} MSGQUEUE_OBJ_t;
-
-extern osMessageQueueId_t mid_MsgQueuePWM;
-//COLA
-extern osMessageQueueId_t getModPWMQueueID(void);
-int Init_MsgQueue_PWM (void);
 
 //INICIAR THREAD PWM Y TEST
 int Init_PWM (void);
