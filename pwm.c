@@ -6,10 +6,7 @@
  *      Thread 1 'Thread_Name': Sample thread
  *---------------------------------------------------------------------------*/
  
- //COLA
-osMessageQueueId_t mid_MsgQueuePWM;
-MSGQUEUE_OBJ_t CT;
-int Init_MsgQueue_PWM (void);
+
 uint16_t  status;
 
 //THREAD DEL PWM 
@@ -25,7 +22,6 @@ osThreadId_t tid_Th_PWM_Test;
 TIM_HandleTypeDef htim1; 
 TIM_OC_InitTypeDef pwm_output;
 
-int ciclo_T = 0;
 
 void PWM_init(void);
 
@@ -36,13 +32,13 @@ int Init_PWM (void) {
     return(-1);
   }
 	//PWM_init();
-  Init_MsgQueue_PWM();
+
   Init_PWM_Test();
   return(0);
 }
  
 void PWM (void *argument) {
- MSGQUEUE_OBJ_t msg;
+
 	PWM_init();
   while (1) {
      // Insert thread code here...
@@ -82,23 +78,11 @@ void PWM (void *argument) {
 		
 		}else{PWM_desactivar();}
 		
-//		int i;
-//		for(i=0; i<5; i++){
-//		PWM_activar();
-//		HAL_Delay(500);
-//		PWM_cambio(FREQ_TONO2);
-//		HAL_Delay(1000);
-//		PWM_cambio(FREQ_TONO1);
-//		}
-//		PWM_desactivar();
 		osThreadYield();                            // suspend thread
   }
 }
 
-//Gets the queue ID
-//osMessageQueueId_t getModPWMQueueID(void){
-//	return mid_MsgQueuePWM;
-//}
+
 
 void PWM_init(void){
 	
@@ -159,14 +143,7 @@ osThreadFlagsSet(tid_PWM,0x02);
 void alarma(){
 osThreadFlagsSet(tid_PWM,0x03);
 }
-int Init_MsgQueue_PWM (void) {
- 
-  mid_MsgQueuePWM = osMessageQueueNew(MSGQUEUE_OBJECTS , sizeof(MSGQUEUE_OBJ_t), NULL);
-  if (mid_MsgQueuePWM == NULL) {
-    return (-1);
-  }
-  return(0);
-}
+
 int Init_PWM_Test(void) {
  
   tid_Th_PWM_Test = osThreadNew(Th_PWM_Test, NULL, NULL);
@@ -180,7 +157,7 @@ void Th_PWM_Test (void *argument) {
 
 
 	
-		alarma();	
+		//alarma();	
 		
     		
   
