@@ -42,11 +42,12 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f4xx_it.h"
-
+#include "cmsis_os2.h"
 #ifdef _RTE_
 #include "RTE_Components.h"             /* Component selection */
 #endif
-
+extern TIM_HandleTypeDef htim7;
+extern osThreadId_t tid_Thread;                        // thread id
 /** @addtogroup STM32F4xx_HAL_Examples
   * @{
   */
@@ -183,11 +184,20 @@ void SysTick_Handler(void)
   * @param  None
   * @retval None
   */
-/*void PPP_IRQHandler(void)
-{
-}*/
 
+//Interrupcion del teclado
+void EXTI15_10_IRQHandler(void){
+	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_12);	
+	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_14);	
+	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_10);  	
+	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_11);
+	
+}
 
+void TIM7_IRQHandler(void){
+	 HAL_TIM_IRQHandler(&htim7);
+	 
+}
 /**
   * @}
   */ 
@@ -195,7 +205,5 @@ void SysTick_Handler(void)
 /**
   * @}
   */
-void EXTI3_IRQHandler(void){
-	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
-}
+
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

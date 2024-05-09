@@ -39,16 +39,23 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "Emisor.h"
-#include "Receptor.h"
-
 #ifdef _RTE_
 #include "RTE_Components.h"             // Component selection
 #endif
 #ifdef RTE_CMSIS_RTOS2                  // when RTE component CMSIS RTOS2 is used
-#include "cmsis_os2.h"                  // ::CMSIS:RTOS2
+#include "lcd.h"
+#include "cmsis_os2.h"   
+#include "stdio.h"
+// ::CMSIS:RTOS2
 #endif
-
+void LED_Init(void);
+void Pulsador_init(void);
+extern void Init_Timers (void); 				//Timer
+extern osTimerId_t tim_id1;        			// timer id     
+extern int Init_Thread (void);
+extern osThreadId_t tid_Thread;                        // thread id
+void Joystick_init();
+void teclado_init();
 #ifdef RTE_CMSIS_RTOS2_RTX5
 /**
   * Override default HAL_GetTick function
@@ -94,6 +101,7 @@ static void Error_Handler(void);
   * @param  None
   * @retval None
   */
+
 int main(void)
 {
 
@@ -111,28 +119,127 @@ int main(void)
   /* Configure the system clock to 168 MHz */
   SystemClock_Config();
   SystemCoreClockUpdate();
-
-  /* Add your application code here
-     */
-
+//LED_Init();
+//	Joystick_init();
+  teclado_init();
+	LCD_reset();
+	LCD_Init();
+	sprintf(pagina, "teclado");
+	LCD_imprimir_L1(pagina);
+	LCD_Update();
+ 
 #ifdef RTE_CMSIS_RTOS2
   /* Initialize CMSIS-RTOS2 */
   osKernelInitialize ();
-Init_emisor();
-Init_receptor();
+
   /* Create thread functions that start executing, 
   Example: osThreadNew(app_main, NULL, NULL); */
+	
+	Init_Timers(); 
+	Init_Thread();
+ 
 
   /* Start thread execution */
   osKernelStart();
+	//NO AÑADIR CODIDO DESPUES NUNCA 
 #endif
 
   /* Infinite loop */
   while (1)
   {
+    
   }
 }
 
+void LED_Init(void){
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+	GPIO_InitTypeDef GPIO_InitStruct={0};
+	GPIO_InitStruct.Mode=GPIO_MODE_OUTPUT_PP; 
+	GPIO_InitStruct.Pull= GPIO_PULLUP;
+	GPIO_InitStruct.Speed= GPIO_SPEED_FREQ_VERY_HIGH;
+	//PB0 -> LED1
+	GPIO_InitStruct.Pin=GPIO_PIN_0;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	//PB7 -> LED2
+	GPIO_InitStruct.Pin=GPIO_PIN_7;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	//PB14 -> LED3
+	GPIO_InitStruct.Pin=GPIO_PIN_14;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+}
+
+void Joystick_init(){
+	//Inicializo los gestos del joystick
+	__HAL_RCC_GPIOB_CLK_ENABLE();
+	GPIO_InitTypeDef GPIO_InitStruct={0};
+	
+	GPIO_InitStruct.Mode=GPIO_MODE_IT_RISING; 
+	GPIO_InitStruct.Pull= GPIO_PULLDOWN;
+	//Arriba -> PB10
+	GPIO_InitStruct.Pin=GPIO_PIN_10;
+	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn); //Habilito la interrupion externa
+}
+
+void teclado_init(){
+
+   __HAL_RCC_GPIOB_CLK_ENABLE();
+   __HAL_RCC_GPIOE_CLK_ENABLE();
+   __HAL_RCC_GPIOD_CLK_ENABLE();	
+	
+	GPIO_InitTypeDef GPIO_InitStruct={0};	
+	
+	//FILAS las configuro a nivel alto y como salida
+	  //FILA 1 PD13
+		GPIO_InitStruct.Pin = GPIO_PIN_13;	
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;  
+	  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+	  //FILA 2  PB10
+		GPIO_InitStruct.Pin = GPIO_PIN_10;	
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+	  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+		//FILA 3 PE15
+		GPIO_InitStruct.Pin = GPIO_PIN_15;	
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+		HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+		//FILA 4 PE12
+		GPIO_InitStruct.Pin = GPIO_PIN_12;	
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+		HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+		
+		//LAS PONGO A NIVEL BAJO
+		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13,GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10,GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15,GPIO_PIN_RESET);
+		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_12,GPIO_PIN_RESET);
+		
+	//COLUMNAS LAS CONFIGURO COMO ENTRADA	CON PULL UP
+		
+		//COLUM 1 PE14
+		GPIO_InitStruct.Pin = GPIO_PIN_14;			
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+		GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+		HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+		//COLUM 2 PD11
+		GPIO_InitStruct.Pin = GPIO_PIN_11;	
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+		GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+		HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+		//COLUM 3 PE10
+		GPIO_InitStruct.Pin = GPIO_PIN_10;			
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+		GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+		HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+		//COLUM 4 PD12
+		GPIO_InitStruct.Pin = GPIO_PIN_12;	
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+		GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+	  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+		
+		 //Habilito la interrupion externa
+		HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+
+}
 /**
   * @brief  System Clock Configuration
   *         The system Clock is configured as follow : 
@@ -171,8 +278,8 @@ static void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 4;
-  RCC_OscInitStruct.PLL.PLLN = 168;
+  RCC_OscInitStruct.PLL.PLLM = 25;
+  RCC_OscInitStruct.PLL.PLLN = 336;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
   RCC_OscInitStruct.PLL.PLLQ = 7;
   if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
