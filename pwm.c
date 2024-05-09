@@ -19,7 +19,7 @@ osThreadId_t tid_Th_PWM_Test;
 
 
 //TIMER
-TIM_HandleTypeDef htim1; 
+TIM_HandleTypeDef htim; 
 TIM_OC_InitTypeDef pwm_output;
 
 
@@ -89,7 +89,7 @@ void PWM_init(void){
 	GPIO_InitTypeDef GPIO_InitStruct={0};
 	__HAL_RCC_GPIOE_CLK_ENABLE();
 
-	GPIO_InitStruct.Pin=GPIO_PIN_9;
+	GPIO_InitStruct.Pin=GPIO_PIN_11;
 	GPIO_InitStruct.Mode=GPIO_MODE_AF_PP; 
 	GPIO_InitStruct.Pull=GPIO_PULLDOWN;
 	GPIO_InitStruct.Alternate=GPIO_AF1_TIM1; 
@@ -97,39 +97,39 @@ void PWM_init(void){
 	
   //Timer 
   __HAL_RCC_TIM1_CLK_ENABLE(); 
-  htim1.Instance = TIM1;
-  htim1.Init.Prescaler = 167 ; 
-  htim1.Init.Period =  FREQ_TONO1 -1;  	
-  htim1.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim1.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim.Instance = TIM1;
+  htim.Init.Prescaler = 167 ; 
+  htim.Init.Period =  FREQ_TONO1 -1;  	
+  htim.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   //HAL_TIM_Base_Init(&htim1);
 
-  HAL_TIM_PWM_Init(&htim1);
+  HAL_TIM_PWM_Init(&htim);
   
-  pwm_output.OCMode=TIM_OCMODE_PWM1;
+  pwm_output.OCMode=TIM_OCMODE_PWM2;
   pwm_output.OCPolarity = TIM_OCPOLARITY_HIGH;
   pwm_output.OCFastMode = TIM_OCFAST_DISABLE;
-	pwm_output.Pulse= (htim1.Init.Period/2)-1;
-	HAL_TIM_OC_Init(&htim1);
+	pwm_output.Pulse= (htim.Init.Period/2)-1;
+	HAL_TIM_OC_Init(&htim);
 
 	 //poner pwm en vez de oc en estas tres
-	HAL_TIM_PWM_ConfigChannel(&htim1,&pwm_output,TIM_CHANNEL_1);
+	HAL_TIM_PWM_ConfigChannel(&htim,&pwm_output,TIM_CHANNEL_2);
 	//HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_1);
 }
 
 void PWM_cambio(uint32_t frecuencia){
-  htim1.Init.Period = frecuencia-1; 
-	pwm_output.Pulse= (htim1.Init.Period/2)-1;
+  htim.Init.Period = frecuencia-1; 
+	pwm_output.Pulse= (htim.Init.Period/2)-1;
 	//HAL_TIM_Base_Init(&htim1);
-	HAL_TIM_PWM_Init(&htim1);
+	HAL_TIM_PWM_Init(&htim);
 }
 
 void PWM_desactivar(){
-	HAL_TIM_PWM_Stop(&htim1,TIM_CHANNEL_1);
+	HAL_TIM_PWM_Stop(&htim,TIM_CHANNEL_2);
 }
 
 void PWM_activar(){
-HAL_TIM_PWM_Start(&htim1,TIM_CHANNEL_1);
+HAL_TIM_PWM_Start(&htim,TIM_CHANNEL_2);
 }
 
 void clave_correcta(){
@@ -140,9 +140,9 @@ void clave_erronea(){
 osThreadFlagsSet(tid_PWM,0x02);
 }
 
-void alarma(){
-osThreadFlagsSet(tid_PWM,0x03);
-}
+//void alarma(){
+//osThreadFlagsSet(tid_PWM,0x03);
+//}
 
 int Init_PWM_Test(void) {
  
@@ -155,8 +155,8 @@ int Init_PWM_Test(void) {
  
 void Th_PWM_Test (void *argument) {
 
-
-	
+//clave_correcta();
+	//clave_erronea();
 		//alarma();	
 		
     		

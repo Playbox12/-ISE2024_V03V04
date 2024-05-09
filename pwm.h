@@ -10,6 +10,7 @@
 //INICIAR THREAD PWM Y TEST
 int Init_PWM (void);
 int Init_PWM_Test(void);
+extern osThreadId_t tid_PWM;
 void PWM_init(void);
 void PWM_cambio(uint32_t frecuencia);
 void PWM_desactivar();

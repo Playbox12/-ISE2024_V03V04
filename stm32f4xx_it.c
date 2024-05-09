@@ -1,3 +1,73 @@
+///******************************************************************************/
+///*                 STM32F4xx Peripherals Interrupt Handlers                   */
+///*  Add here the Interrupt Handler for the used peripheral(s) (PPP), for the  */
+///*  available peripheral interrupt handler's name please refer to the startup */
+///*  file (startup_stm32f4xx.s).                                               */
+///******************************************************************************/
+
+///**
+//  * @brief  This function handles PPP interrupt request.
+//  * @param  None
+//  * @retval None
+//  */
+
+////Interrupcion del teclado
+//void EXTI15_10_IRQHandler(void){
+//	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_12);	
+//	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_14);	
+//	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_10);  	
+//	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_11);
+// // HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);	
+//  //mando
+//  
+//}
+
+//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+//	//Envio un set al hilo 
+//  
+//	if((HAL_GPIO_ReadPin(GPIOE,GPIO_PIN_14) == 1)){
+//		COLUMNA = 1;
+//    osThreadFlagsSet(tid_Teclado,0x00000002U); 
+//	}  //COL 1
+//	else if((HAL_GPIO_ReadPin(GPIOD,GPIO_PIN_11) == 1)){
+//		COLUMNA = 2;
+//    osThreadFlagsSet(tid_Teclado,0x00000002U); 
+//  }  //COL 2
+//	else if((HAL_GPIO_ReadPin(GPIOE,GPIO_PIN_10) == 1)){
+//	  COLUMNA = 3;
+//    osThreadFlagsSet(tid_Teclado,0x00000002U); 
+//	}  //COL 3
+//			 else if((HAL_GPIO_ReadPin(GPIOD,GPIO_PIN_12) == 1)){
+//		COLUMNA = 4;
+//    osThreadFlagsSet(tid_Teclado,0x00000002U);      
+//	}  //COL 4				
+//  
+//   if((HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_11) == 1)){
+//     current_time = HAL_GetTick();
+
+//    // Calcular el período entre flancos ascendentes
+//     periodo = current_time - last_rising_edge;
+
+//    // Calcular la frecuencia
+// //   freq = 1000000 / periodo;
+
+//    // Actualizar el tiempo del último flanco ascendente
+//    last_rising_edge = current_time;  
+//   }
+//// 	 if(HAL_GPIO_ReadPin(GPIOB,GPIO_PIN_3)== 0){
+////		osThreadFlagsSet(tid_PWM,0x03);
+////		}
+//  	/* if(HAL_GPIO_ReadPin(GPIOC,GPIO_PIN_13)== 0){
+//		      osThreadFlagsSet(tid_PWM,0x03);
+//       		osThreadFlagsSet(TID_Alarma,0x03);
+//		}*/
+//}	
+
+////void EXTI3_IRQHandler(void){
+////	HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
+////}
+
+///************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
 /**
   ******************************************************************************
   * @file    Templates/Src/stm32f4xx_it.c 
@@ -42,12 +112,16 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "stm32f4xx_it.h"
-#include "cmsis_os2.h"
+#include "clock.h"
+#include "Thread_Teclado.h"
+//#include "Receptor.h"
+//#include "pwm.h"
+
 #ifdef _RTE_
 #include "RTE_Components.h"             /* Component selection */
 #endif
-extern TIM_HandleTypeDef htim7;
-extern osThreadId_t tid_Thread;                        // thread id
+
+
 /** @addtogroup STM32F4xx_HAL_Examples
   * @{
   */
@@ -184,6 +258,7 @@ void SysTick_Handler(void)
   * @param  None
   * @retval None
   */
+	
 
 //Interrupcion del teclado
 void EXTI15_10_IRQHandler(void){
@@ -194,16 +269,24 @@ void EXTI15_10_IRQHandler(void){
 	
 }
 
-void TIM7_IRQHandler(void){
-	 HAL_TIM_IRQHandler(&htim7);
-	 
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+	//Envio un set al hilo  
+	if((HAL_GPIO_ReadPin(GPIOE,GPIO_PIN_14) == 1)){
+		COLUMNA = 1;
+    osThreadFlagsSet(tid_Teclado,0x00000002U); 
+	}  //COL 1
+	else if((HAL_GPIO_ReadPin(GPIOD,GPIO_PIN_11) == 1)){
+		COLUMNA = 2;
+    osThreadFlagsSet(tid_Teclado,0x00000002U); 
+  }  //COL 2
+	else if((HAL_GPIO_ReadPin(GPIOE,GPIO_PIN_10) == 1)){
+	  COLUMNA = 3;
+    osThreadFlagsSet(tid_Teclado,0x00000002U); 
+	}  //COL 3
+			 else if((HAL_GPIO_ReadPin(GPIOD,GPIO_PIN_12) == 1)){
+		COLUMNA = 4;
+    osThreadFlagsSet(tid_Teclado,0x00000002U);      
+	}  //COL 4				
+  
 }
-/**
-  * @}
-  */ 
-
-/**
-  * @}
-  */
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

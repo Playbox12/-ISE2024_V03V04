@@ -14,6 +14,8 @@ void Thread_receptor (void *argument);                   // thread function
  uint32_t current_time = 0;
  uint32_t freq = 0;
  uint32_t periodo=0;
+ extern char pssw_S[5];
+ 
 static uint32_t frecuencias[10] = {
   10, 12, 14, 16, 18, 20, 22, 24, 26, 28
 };
@@ -30,7 +32,7 @@ int Init_receptor (void) {
  
 void Thread_receptor (void *argument) {
  uint8_t rec_key[4];
- uint8_t key[4] = {1, 2, 3, 4}; // Ejemplo de clave
+ uint8_t key[4] = {(int)pssw_S[0],(int)pssw_S[1],(int)pssw_S[2],(int)pssw_S[3],}; // Ejemplo de clave
  uint8_t i =0;
  uint8_t j =0;
   while (1) {
@@ -53,25 +55,25 @@ void Thread_receptor (void *argument) {
   }
 }
 
-// Función para detectar el flanco ascendente de la señal PWM
-void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
-  //if (GPIO_Pin == GPIO_PIN_0/*PWM_PIN*/) {
-    // Obtener el tiempo actual
-    current_time = HAL_GetTick();
+//// Función para detectar el flanco ascendente de la señal PWM
+//void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin) {
+//  //if (GPIO_Pin == GPIO_PIN_0/*PWM_PIN*/) {
+//    // Obtener el tiempo actual
+//    current_time = HAL_GetTick();
 
-    // Calcular el período entre flancos ascendentes
-     periodo = current_time - last_rising_edge;
+//    // Calcular el período entre flancos ascendentes
+//     periodo = current_time - last_rising_edge;
 
-    // Calcular la frecuencia
- //   freq = 1000000 / periodo;
+//    // Calcular la frecuencia
+// //   freq = 1000000 / periodo;
 
-    // Actualizar el tiempo del último flanco ascendente
-    last_rising_edge = current_time;
- // }
-}
+//    // Actualizar el tiempo del último flanco ascendente
+//    last_rising_edge = current_time;
+// // }
+//}
 
 void Init_input_pin(void){
-  GPIO_InitStruct.Pin = GPIO_PIN_10;
+  GPIO_InitStruct.Pin = GPIO_PIN_11;
   GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;

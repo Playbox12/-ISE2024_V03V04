@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    Templates/Src/main.c 
   * @author  MCD Application Team
-  * @brief   STM32F4xx HAL API Template project 
+  * @brief   Main program body
   *
   * @note    modified by ARM
   *          The modifications allow to use this file as User Code Template
@@ -39,23 +39,17 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "Emisor.h"
+#include "Receptor.h"
+#include "LEDs.h"
+#include "humo.h"
+#include "pwm.h"
 #ifdef _RTE_
 #include "RTE_Components.h"             // Component selection
 #endif
-#ifdef RTE_CMSIS_RTOS2                  // when RTE component CMSIS RTOS2 is used
+
+
 #include "lcd.h"
-#include "cmsis_os2.h"   
-#include "stdio.h"
-// ::CMSIS:RTOS2
-#endif
-void LED_Init(void);
-void Pulsador_init(void);
-extern void Init_Timers (void); 				//Timer
-extern osTimerId_t tim_id1;        			// timer id     
-extern int Init_Thread (void);
-extern osThreadId_t tid_Thread;                        // thread id
-void Joystick_init();
-void teclado_init();
 #ifdef RTE_CMSIS_RTOS2_RTX5
 /**
   * Override default HAL_GetTick function
@@ -101,6 +95,14 @@ static void Error_Handler(void);
   * @param  None
   * @retval None
   */
+	
+
+extern int Init_Thclock(void);
+extern int Init_Thread_T (void);
+void teclado_init();
+void HUMO_init(void);
+void LED_Init(void);
+int Init_PWM (void);
 
 int main(void)
 {
@@ -119,68 +121,38 @@ int main(void)
   /* Configure the system clock to 168 MHz */
   SystemClock_Config();
   SystemCoreClockUpdate();
-//LED_Init();
-//	Joystick_init();
-  teclado_init();
-	LCD_reset();
-	LCD_Init();
-	sprintf(pagina, "teclado");
-	LCD_imprimir_L1(pagina);
-	LCD_Update();
- 
+
+  /* Add your application code here
+     */
+	
+    teclado_init();
+		LCD_RESET();
+		LCD_init();
+		clean();
+    LED_Init();
+    HUMO_init();
+
 #ifdef RTE_CMSIS_RTOS2
   /* Initialize CMSIS-RTOS2 */
   osKernelInitialize ();
+  
 
-  /* Create thread functions that start executing, 
-  Example: osThreadNew(app_main, NULL, NULL); */
-	
-	Init_Timers(); 
-	Init_Thread();
- 
-
+  /* Create application main thread */
+  osThreadNew(app_main, NULL, &app_main_attr);
+	Init_Thclock();
+	Init_Thread_T();
+  Init_emisor();
+  Init_receptor();
+  Init_PWM ();
   /* Start thread execution */
   osKernelStart();
-	//NO AÑADIR CODIDO DESPUES NUNCA 
 #endif
 
   /* Infinite loop */
   while (1)
   {
-    
   }
 }
-
-void LED_Init(void){
-	__HAL_RCC_GPIOB_CLK_ENABLE();
-	GPIO_InitTypeDef GPIO_InitStruct={0};
-	GPIO_InitStruct.Mode=GPIO_MODE_OUTPUT_PP; 
-	GPIO_InitStruct.Pull= GPIO_PULLUP;
-	GPIO_InitStruct.Speed= GPIO_SPEED_FREQ_VERY_HIGH;
-	//PB0 -> LED1
-	GPIO_InitStruct.Pin=GPIO_PIN_0;
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-	//PB7 -> LED2
-	GPIO_InitStruct.Pin=GPIO_PIN_7;
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-	//PB14 -> LED3
-	GPIO_InitStruct.Pin=GPIO_PIN_14;
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-}
-
-void Joystick_init(){
-	//Inicializo los gestos del joystick
-	__HAL_RCC_GPIOB_CLK_ENABLE();
-	GPIO_InitTypeDef GPIO_InitStruct={0};
-	
-	GPIO_InitStruct.Mode=GPIO_MODE_IT_RISING; 
-	GPIO_InitStruct.Pull= GPIO_PULLDOWN;
-	//Arriba -> PB10
-	GPIO_InitStruct.Pin=GPIO_PIN_10;
-	HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-	HAL_NVIC_EnableIRQ(EXTI15_10_IRQn); //Habilito la interrupion externa
-}
-
 void teclado_init(){
 
    __HAL_RCC_GPIOB_CLK_ENABLE();
@@ -240,9 +212,10 @@ void teclado_init(){
 		HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
 
 }
+
 /**
   * @brief  System Clock Configuration
-  *         The system Clock is configured as follow : 
+  *         The system Clock is configured as follow :
   *            System Clock source            = PLL (HSE)
   *            SYSCLK(Hz)                     = 168000000
   *            HCLK(Hz)                       = 168000000
@@ -278,23 +251,23 @@ static void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 25;
-  RCC_OscInitStruct.PLL.PLLN = 336;
+  RCC_OscInitStruct.PLL.PLLM = 4U;
+  RCC_OscInitStruct.PLL.PLLN = 168U;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 7;
+  RCC_OscInitStruct.PLL.PLLQ = 7U;
   if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     /* Initialization Error */
     Error_Handler();
   }
 
-  /* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2 
+  /* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2
      clocks dividers */
   RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;  
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;  
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
   if(HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
     /* Initialization Error */
@@ -344,6 +317,34 @@ void assert_failed(uint8_t* file, uint32_t line)
 
 #endif
 
+void config_leds(){
+//configuracion de los leds pin0=verde pin14=rojo
+  GPIO_InitTypeDef GPIO_InitStruct;
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull = GPIO_PULLUP;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
+  
+  GPIO_InitStruct.Pin =GPIO_PIN_0 | GPIO_PIN_7 | GPIO_PIN_14;
+  HAL_GPIO_Init(GPIOB,&GPIO_InitStruct);
+}
+
+ void config_pulsador(){
+	//CONFIGURACION PULSADOR USER
+
+ GPIO_InitTypeDef GPIO_InitStruct;
+	__HAL_RCC_GPIOC_CLK_ENABLE();
+  
+  //Configure GPIO pin :PC13 - USER BUTTON
+    GPIO_InitStruct.Pin = GPIO_PIN_13;
+    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING; //Flancos de subida
+    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+   
+   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
+ 
+ }
 /**
   * @}
   */ 
