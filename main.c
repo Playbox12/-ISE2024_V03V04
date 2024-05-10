@@ -2,7 +2,7 @@
   ******************************************************************************
   * @file    Templates/Src/main.c 
   * @author  MCD Application Team
-  * @brief   Main program body
+  * @brief   STM32F4xx HAL API Template project 
   *
   * @note    modified by ARM
   *          The modifications allow to use this file as User Code Template
@@ -39,17 +39,14 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "Emisor.h"
-#include "Receptor.h"
-#include "LEDs.h"
-#include "humo.h"
-#include "pwm.h"
+
 #ifdef _RTE_
 #include "RTE_Components.h"             // Component selection
 #endif
+#ifdef RTE_CMSIS_RTOS2                  // when RTE component CMSIS RTOS2 is used
+#include "cmsis_os2.h"                  // ::CMSIS:RTOS2
+#endif
 
-
-#include "lcd.h"
 #ifdef RTE_CMSIS_RTOS2_RTX5
 /**
   * Override default HAL_GetTick function
@@ -85,7 +82,13 @@ uint32_t HAL_GetTick (void) {
 /* Private define ------------------------------------------------------------*/
 /* Private macro -------------------------------------------------------------*/
 /* Private variables ---------------------------------------------------------*/
+extern int Init_Thread(void);
+extern int Init_Timers1 (void);
 /* Private function prototypes -----------------------------------------------*/
+//GPIO_InitTypeDef GPIO_InitStruct;
+void Init_leds(void);
+void GPIO_Init(void);
+
 static void SystemClock_Config(void);
 static void Error_Handler(void);
 
@@ -95,18 +98,10 @@ static void Error_Handler(void);
   * @param  None
   * @retval None
   */
-	
-
-extern int Init_Thclock(void);
-extern int Init_Thread_T (void);
-void teclado_init();
-void HUMO_init(void);
-void LED_Init(void);
-int Init_PWM (void);
-
 int main(void)
 {
-
+	//int status=0;
+	
   /* STM32F4xx HAL library initialization:
        - Configure the Flash prefetch, Flash preread and Buffer caches
        - Systick timer is configured by default as source of time base, but user 
@@ -117,6 +112,7 @@ int main(void)
        - Low Level Initialization
      */
   HAL_Init();
+	
 
   /* Configure the system clock to 168 MHz */
   SystemClock_Config();
@@ -125,25 +121,17 @@ int main(void)
   /* Add your application code here
      */
 	
-    teclado_init();
-		LCD_RESET();
-		LCD_init();
-		clean();
-    LED_Init();
-    HUMO_init();
-
+	
+	Init_leds();
+	GPIO_Init();
+	
+	
 #ifdef RTE_CMSIS_RTOS2
   /* Initialize CMSIS-RTOS2 */
   osKernelInitialize ();
-  
-
-  /* Create application main thread */
-  osThreadNew(app_main, NULL, &app_main_attr);
-	Init_Thclock();
-	Init_Thread_T();
-  Init_emisor();
-  Init_receptor();
-  Init_PWM ();
+	
+	Init_Thread();
+	Init_Timers1();
   /* Start thread execution */
   osKernelStart();
 #endif
@@ -153,69 +141,10 @@ int main(void)
   {
   }
 }
-void teclado_init(){
-
-   __HAL_RCC_GPIOB_CLK_ENABLE();
-   __HAL_RCC_GPIOE_CLK_ENABLE();
-   __HAL_RCC_GPIOD_CLK_ENABLE();	
-	
-	GPIO_InitTypeDef GPIO_InitStruct={0};	
-	
-	//FILAS las configuro a nivel alto y como salida
-	  //FILA 1 PD13
-		GPIO_InitStruct.Pin = GPIO_PIN_13;	
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;  
-	  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-	  //FILA 2  PB10
-		GPIO_InitStruct.Pin = GPIO_PIN_10;	
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-	  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-		//FILA 3 PE15
-		GPIO_InitStruct.Pin = GPIO_PIN_15;	
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-		HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-		//FILA 4 PE12
-		GPIO_InitStruct.Pin = GPIO_PIN_12;	
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-		HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-		
-		//LAS PONGO A NIVEL BAJO
-		HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13,GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(GPIOB, GPIO_PIN_10,GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_15,GPIO_PIN_RESET);
-		HAL_GPIO_WritePin(GPIOE, GPIO_PIN_12,GPIO_PIN_RESET);
-		
-	//COLUMNAS LAS CONFIGURO COMO ENTRADA	CON PULL UP
-		
-		//COLUM 1 PE14
-		GPIO_InitStruct.Pin = GPIO_PIN_14;			
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-		GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-		HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-		//COLUM 2 PD11
-		GPIO_InitStruct.Pin = GPIO_PIN_11;	
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-		GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-		HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-		//COLUM 3 PE10
-		GPIO_InitStruct.Pin = GPIO_PIN_10;			
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-		GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-		HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-		//COLUM 4 PD12
-		GPIO_InitStruct.Pin = GPIO_PIN_12;	
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-		GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-	  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-		
-		 //Habilito la interrupion externa
-		HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
-
-}
 
 /**
   * @brief  System Clock Configuration
-  *         The system Clock is configured as follow :
+  *         The system Clock is configured as follow : 
   *            System Clock source            = PLL (HSE)
   *            SYSCLK(Hz)                     = 168000000
   *            HCLK(Hz)                       = 168000000
@@ -233,6 +162,44 @@ void teclado_init(){
   * @param  None
   * @retval None
   */
+	
+
+
+
+
+
+static void Init_leds(void){
+	GPIO_InitTypeDef GPIO_InitStruct={0};
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  GPIO_InitStruct.Pin=GPIO_PIN_0 | GPIO_PIN_7 | GPIO_PIN_14;
+  GPIO_InitStruct.Mode=GPIO_MODE_OUTPUT_PP;
+  GPIO_InitStruct.Pull=GPIO_PULLUP;//GPIO_InitStruct.Pull=GPIO_NOPULL;
+  GPIO_InitStruct.Speed=GPIO_SPEED_FREQ_VERY_HIGH;//GPIO_InitStruct.Speed=GPIO_SPEED_FREQ_LOW;
+  HAL_GPIO_Init(GPIOB,&GPIO_InitStruct);
+}
+
+void GPIO_Init(void) {
+  GPIO_InitTypeDef GPIO_InitStruct;
+
+ 
+  __HAL_RCC_GPIOG_CLK_ENABLE();
+  
+
+  // Configurar el pin TRIG (PG2) como salida
+  GPIO_InitStruct.Pin = GPIO_PIN_2;
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Salida push-pull
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH; // Alta velocidad
+  HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
+
+  // Configurar el pin ECHO (PG3) como entrada
+  GPIO_InitStruct.Pin = GPIO_PIN_3;
+  GPIO_InitStruct.Mode = GPIO_MODE_INPUT; // Entrada
+  GPIO_InitStruct.Pull = GPIO_NOPULL; // Sin resistencia de pull-up/pull-down
+  HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
+}
+
+
+
 static void SystemClock_Config(void)
 {
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
@@ -251,23 +218,23 @@ static void SystemClock_Config(void)
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
-  RCC_OscInitStruct.PLL.PLLM = 4U;
-  RCC_OscInitStruct.PLL.PLLN = 168U;
+  RCC_OscInitStruct.PLL.PLLM = 4;
+  RCC_OscInitStruct.PLL.PLLN = 168;
   RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-  RCC_OscInitStruct.PLL.PLLQ = 7U;
+  RCC_OscInitStruct.PLL.PLLQ = 7;
   if(HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     /* Initialization Error */
     Error_Handler();
   }
 
-  /* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2
+  /* Select PLL as system clock source and configure the HCLK, PCLK1 and PCLK2 
      clocks dividers */
   RCC_ClkInitStruct.ClockType = (RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2);
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
-  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;
-  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV4;  
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV2;  
   if(HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
     /* Initialization Error */
@@ -317,34 +284,6 @@ void assert_failed(uint8_t* file, uint32_t line)
 
 #endif
 
-void config_leds(){
-//configuracion de los leds pin0=verde pin14=rojo
-  GPIO_InitTypeDef GPIO_InitStruct;
-  __HAL_RCC_GPIOB_CLK_ENABLE();
-
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_PULLUP;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  
-  GPIO_InitStruct.Pin =GPIO_PIN_0 | GPIO_PIN_7 | GPIO_PIN_14;
-  HAL_GPIO_Init(GPIOB,&GPIO_InitStruct);
-}
-
- void config_pulsador(){
-	//CONFIGURACION PULSADOR USER
-
- GPIO_InitTypeDef GPIO_InitStruct;
-	__HAL_RCC_GPIOC_CLK_ENABLE();
-  
-  //Configure GPIO pin :PC13 - USER BUTTON
-    GPIO_InitStruct.Pin = GPIO_PIN_13;
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING; //Flancos de subida
-    GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-   
-   HAL_NVIC_EnableIRQ(EXTI15_10_IRQn);
- 
- }
 /**
   * @}
   */ 
